@@ -47,14 +47,19 @@ splice (Store d1 i1 m1) (Store d2 i2 m2) q
 put :: Store -> [Qualification] -> Int -> Store
 put (Point v) [] val = Point val
 put store q val
-  | (dimensionality store) == (length path) = splice (put (slice store (head path)) (tail path) val) store (head path)
-  | otherwise                            = error "The dimensionality of the path and the store don't match."
+  | (validQualification store path) = splice (put (slice store (head path)) (tail path) val) store (head path)
+  | otherwise                       = error "The dimensionality of the path and the store don't match."
   where path = List.sort q
 
 
 get :: Store -> [Qualification] -> Int
 get (Point v) [] = v
 get store q
-  | (dimensionality store) == (length path) = get (slice store (head path)) (tail path)
-  | otherwise                            = error "The dimensionality of the path and the store don't match."
+  | (validQualification store path) = get (slice store (head path)) (tail path)
+  | otherwise                       = error "The dimensionality of the path and the store don't match."
   where path = List.sort q
+
+
+validQualification :: Store -> [Qualification] -> Bool
+validQualification (Point _) [] = True
+validQualification s q = dimensions(s) == [a | (Qualification a b) <- q]

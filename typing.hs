@@ -1,9 +1,24 @@
+module SimpleStore
+( Qualification(..)
+, Store(..)
+, Path
+, create
+, createIndexed
+, dimensionality
+, dimensions
+, slice
+, splice
+, put
+, get
+, validQualification
+) where
+
 import qualified Data.Map as Map
 import qualified Data.List as List
 
 data Qualification = Qualification Int Int deriving (Eq, Ord, Show)
 data Store = Store Int Int (Map.Map Qualification Store) | Point Int deriving (Show)
-
+type Path = [Qualification]
 
 create :: Int -> Store
 create n = createIndexed n 1
@@ -44,7 +59,7 @@ splice (Store d1 i1 m1) (Store d2 i2 m2) q
   | otherwise      = error "You cannot splice these two stores."
 
 
-put :: Store -> [Qualification] -> Int -> Store
+put :: Store -> Path -> Int -> Store
 put (Point v) [] val = Point val
 put store q val
   | (validQualification store path) = splice (put (slice store (head path)) (tail path) val) store (head path)
@@ -52,7 +67,7 @@ put store q val
   where path = List.sort q
 
 
-get :: Store -> [Qualification] -> Int
+get :: Store -> Path -> Int
 get (Point v) [] = v
 get store q
   | (validQualification store path) = get (slice store (head path)) (tail path)
@@ -60,6 +75,6 @@ get store q
   where path = List.sort q
 
 
-validQualification :: Store -> [Qualification] -> Bool
+validQualification :: Store -> Path -> Bool
 validQualification (Point _) [] = True
 validQualification s q = dimensions(s) == [a | (Qualification a b) <- q]

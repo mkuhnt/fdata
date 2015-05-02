@@ -16,50 +16,58 @@ module SimpleStore
 import qualified Data.Map as Map
 import qualified Data.List as List
 
+-- Qualifications define a selection on a dimension at a certain point.
+-- The first argument picks the dimension by index and the second argument the value in the dimension
 data Qualification = Qualification Int Int deriving (Eq, Ord, Show)
-data Store = Store Int Int (Map.Map Qualification Store) | Point Int deriving (Show)
+
+-- Store define the data structure
+--  Store: First argument is the number of dimensions
+--         Second argument is the index where the dimensions start
+--         Third argument is the default value which is returned on not further specified data points
+--         Fourth argument is the data structure that holds the embedded stores
+data Store a = Store Int Int a (Map.Map Qualification (Store a)) | Point a deriving (Show)
 type Path = [Qualification]
 
-create :: Int -> Store
-create n = createIndexed n 1
+create :: Int -> a -> Store a
+create n def = createIndexed n 1 def
 
 
-createIndexed :: Int -> Int -> Store
-createIndexed n idx
-  | n <= 0 = Point 0
-  | n >= 1 = Store n idx Map.empty
+createIndexed :: Int -> Int -> a -> Store a
+createIndexed n idx def
+  | n <= 0 = Point def
+  | n >= 1 = Store n idx def Map.empty
 
 
-dimensionality :: Store -> Int
+dimensionality :: Store a -> Int
 dimensionality (Point _) = 0
-dimensionality (Store n _ _) = n
+dimensionality (Store n _ _ _) = n
 
 
-dimensions :: Store -> [Int]
+dimensions :: Store a -> [Int]
 dimensions (Point _) = []
-dimensions (Store n start _) = [start..(start + n - 1)]
+dimensions (Store n start _ _) = [start..(start + n - 1)]
 
 
-slice :: Store -> Qualification -> Store
+slice :: Store a -> Qualification -> Store a
 slice (Point _) _  = error "You cannot slice a point. It is atomic ;)"
-slice (Store n i m) q
+slice (Store n i def m) q
   | n <= 0 = error "A store with zero dimensions is a point and cannot be sliced."
   | n == 1 = case Map.lookup q m of
-    Nothing  -> Point 0
+    Nothing  -> Point def
     Just val -> val
   | n >= 2 = case Map.lookup q m of
-    Nothing  -> createIndexed (n-1) (i+1)
+    Nothing  -> createIndexed (n-1) (i+1) def
     Just val -> val
 
 
-splice :: Store -> Store -> Qualification -> Store
-splice point@(Point v) (Store 1 i m) q = Store 1 i (Map.insert q point m)
-splice store@(Store d1 i1 m1) (Store d2 i2 m2) q
-  | d1 == (d2 - 1) = Store d2 i2 (Map.insert q store m2)
+splice :: Store a -> Store a -> Qualification -> Store a
+splice point@(Point v) (Store 1 i def m) q = Store 1 i def (Map.insert q point m)
+splice store@(Store d1 i1 def1 m1) (Store d2 i2 def2 m2) q
+  | d1 == (d2 - 1) = Store d2 i2 def2 (Map.insert q store m2)
   | otherwise      = error "You cannot splice these two stores."
 
 
-put :: Store -> Path -> Int -> Store
+put :: Store a -> Path -> a -> Store a
 put (Point v) [] val = Point val
 put store q val
   | (validQualification store path) = splice (put (slice store (head path)) (tail path) val) store (head path)
@@ -67,7 +75,7 @@ put store q val
   where path = List.sort q
 
 
-get :: Store -> Path -> Int
+get :: Store a -> Path -> a
 get (Point v) [] = v
 get store q
   | (validQualification store path) = get (slice store (head path)) (tail path)
@@ -75,6 +83,6 @@ get store q
   where path = List.sort q
 
 
-validQualification :: Store -> Path -> Bool
+validQualification :: Store a -> Path -> Bool
 validQualification (Point _) [] = True
 validQualification s q = dimensions(s) == [a | (Qualification a b) <- q]

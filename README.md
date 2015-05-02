@@ -1,7 +1,7 @@
 # Functional approach to dimensional data
 
 ToDo
-- Generic typing of data
+- Ensure slicing works without order on dimensions
 - Dimensions with ranges
 - Dimensions with names
 - Stores with names

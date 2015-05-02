@@ -53,9 +53,9 @@ slice (Store n i m) q
 
 
 splice :: Store -> Store -> Qualification -> Store
-splice (Point v) (Store 1 i m) q = Store 1 i (Map.insert q (Point v) m)
-splice (Store d1 i1 m1) (Store d2 i2 m2) q
-  | d1 == (d2 - 1) = Store d2 i2 (Map.insert q (Store d1 i1 m1) m2)
+splice point@(Point v) (Store 1 i m) q = Store 1 i (Map.insert q point m)
+splice store@(Store d1 i1 m1) (Store d2 i2 m2) q
+  | d1 == (d2 - 1) = Store d2 i2 (Map.insert q store m2)
   | otherwise      = error "You cannot splice these two stores."
 
 

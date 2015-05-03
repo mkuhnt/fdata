@@ -1,4 +1,4 @@
-module SimpleStore
+module StorePrototype
 ( Qualification(..)
 , Store(..)
 , Path

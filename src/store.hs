@@ -42,3 +42,18 @@ get store@(Store rng dflt mp) path
   | (fullyQualified store path) = case Map.lookup path mp of
     Nothing    -> dflt
     Just value -> value
+
+-- Reduction of a store by an under qualified path
+-- TODO: Merge with get
+--
+--slice :: (Ord a) => Store a b -> Path a -> Store a b
+--slice store [] = store
+--slice store@(Store rng dflt mp) path@(ph@(Qualification d v):pt) = case List.elemIndex ph rng of
+--  Nothing  -> error "The dimension " ++ d ++ " is not valid for the store"
+--  Just idx -> Map.filterWithKey (\ path _ -> (path !! idx) == ph) mp
+
+qFilter :: (Ord a) =>[a] -> (Map.Map (Path a) b) -> Path a -> (Map.Map (Path a) b)
+qFilter _ m [] = m
+qFilter rng mp (ph@(Qualification d v):pt) = case List.elemIndex d rng of
+  Nothing  -> error "The dimension is not compatible with the store"
+  Just idx -> qFilter rng (Map.filterWithKey (\ path _ -> (path !! idx) == ph) mp) pt
